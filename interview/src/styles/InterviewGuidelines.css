@@ -1,0 +1,140 @@
+.guidelines-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 2rem;
+}
+
+.guidelines-content {
+  background: white;
+  padding: 3rem;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  max-width: 800px;
+  width: 100%;
+}
+
+.guidelines-content h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--light-text);
+  margin-bottom: 3rem;
+}
+
+.guidelines-list {
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.guideline-item {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.05);
+  transition: all 0.3s ease;
+}
+
+.guideline-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.guideline-item i {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.guideline-item h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.guideline-item p {
+  color: var(--light-text);
+  line-height: 1.5;
+}
+
+.consent-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.consent-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.consent-checkbox label {
+  color: var(--text-color);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.proceed-button {
+  width: 100%;
+  padding: 1.2rem;
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.proceed-button:not(.disabled):hover {
+  background: var(--hover-gradient);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.proceed-button.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #ccc;
+}
+
+@media (max-width: 768px) {
+  .guidelines-content {
+    padding: 2rem;
+  }
+
+  .guidelines-content h1 {
+    font-size: 2rem;
+  }
+
+  .guideline-item {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+} 
