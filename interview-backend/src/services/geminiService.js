@@ -2,61 +2,47 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-const getFallbackQuestion = (skill) => {
-  const questions = {
-    javascript: {
-      question: "What is the difference between let, const, and var in JavaScript?",
-      topic: "JavaScript Basics",
-      difficulty: "easy",
-      expectedDuration: "1-2 minutes",
-      category: "fundamentals",
-      expectedKeyPoints: ["Block scope vs function scope", "Hoisting behavior", "Reassignment rules"]
-    },
-    react: {
-      question: "Compare class components and functional components in React. When would you choose one over the other?",
-      topic: "React",
-      difficulty: "medium",
-      expectedDuration: "2-3 minutes",
-      category: "conceptual",
-      context: "React component patterns"
-    },
-    python: {
-      question: "Explain Python's list comprehensions and when you should or shouldn't use them.",
-      topic: "Python",
-      difficulty: "medium",
-      expectedDuration: "2-3 minutes",
-      category: "best practices",
-      context: "Python coding patterns"
-    },
-    "system design": {
-      question: "Explain the key considerations when designing a caching system for a web application.",
-      topic: "System Design",
-      difficulty: "medium",
-      expectedDuration: "2-3 minutes",
-      category: "architectural",
-      context: "Web application architecture"
-    }
-  };
+const getFallbackQuestion = (skill, previousQuestions = []) => {
+  const fallbackQuestions = [
+    `Explain the core concepts of ${skill} and their practical applications.`,
+    `What are the best practices you follow when working with ${skill}?`,
+    `Describe a challenging problem you've solved using ${skill}.`,
+    `Compare and contrast different approaches in ${skill}.`,
+    `What are the common pitfalls to avoid when working with ${skill}?`
+  ];
 
-  return questions[skill.toLowerCase()] || {
-    question: `Explain the most important principles or best practices you follow when working with ${skill}.`,
+  // Filter out previously used questions
+  const unusedQuestions = fallbackQuestions.filter(q => 
+    !previousQuestions.some(prevQ => calculateSimilarity(prevQ, q) > 0.7)
+  );
+
+  // If all fallback questions are used, create a variation
+  const question = unusedQuestions.length > 0 
+    ? unusedQuestions[0]
+    : `Tell me about your experience with ${skill} and any recent projects.`;
+
+  return {
+    question,
     topic: skill,
     difficulty: "medium",
     expectedDuration: "2-3 minutes",
-    category: "best practices",
-    context: "General principles discussion"
+    category: "experience",
+    expectedKeyPoints: ["Technical knowledge", "Practical experience", "Challenges faced"]
   };
 };
 
 const generateQuestion = async (skill, previousQuestions = []) => {
   try {
-    const prompt = `Generate a concise technical interview question for ${skill} that:
+    console.log('Generating question for skill:', skill);
+    console.log('Previous questions:', previousQuestions);
+
+    const prompt = `Generate a unique technical interview question for ${skill} that:
     1. Tests fundamental understanding
     2. Should be answerable verbally in 1-2 minutes
     3. Focuses on concepts that can be easily explained verbally
     4. Is suitable for entry to beginner-mid-level developers
     5. Avoids questions requiring detailed code implementation
-    6. Must be different from: ${previousQuestions.join(', ')}
+    6. Must be COMPLETELY DIFFERENT from these previous questions: ${previousQuestions.join(', ')}
     
     The question should be conversation-friendly and encourage discussion rather than requiring specific code syntax or complex technical details.
     
@@ -77,25 +63,51 @@ const generateQuestion = async (skill, previousQuestions = []) => {
     const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
     
     try {
-      return JSON.parse(jsonStr);
+      const question = JSON.parse(jsonStr);
+      
+      // Check if question is too similar to previous questions
+      const isDuplicate = previousQuestions.some(prevQ => {
+        const similarity = calculateSimilarity(prevQ, question.question);
+        return similarity > 0.7; // 70% similarity threshold
+      });
+
+      if (isDuplicate) {
+        console.log('Duplicate question detected, generating alternative');
+        return getFallbackQuestion(skill, previousQuestions);
+      }
+
+      return question;
     } catch (e) {
       console.error('Failed to parse Gemini response:', e);
-      return getFallbackQuestion(skill);
+      return getFallbackQuestion(skill, previousQuestions);
     }
   } catch (error) {
     console.error('Error generating question:', error);
-    return getFallbackQuestion(skill);
+    return getFallbackQuestion(skill, previousQuestions);
   }
+};
+
+// Add a simple similarity check function
+const calculateSimilarity = (str1, str2) => {
+  const words1 = str1.toLowerCase().split(/\W+/);
+  const words2 = str2.toLowerCase().split(/\W+/);
+  const commonWords = words1.filter(word => words2.includes(word));
+  return commonWords.length / Math.max(words1.length, words2.length);
 };
 
 const analyzeAnswer = async (answer, question) => {
   try {
-    const prompt = `Evaluate this technical interview answer:
-    Question: ${question.question}
-    Answer: ${answer || '[No answer provided]'}
-    Expected Key Points: ${question.expectedKeyPoints?.join(', ')}
+    // Make sure we have the question text
+    const questionText = typeof question === 'string' ? question : 
+                        question.question || 'Unknown question';
     
-    Return only the JSON object without any markdown formatting or code blocks:
+    console.log('Analyzing answer:', { questionText, answer });
+
+    const prompt = `Evaluate this technical interview answer:
+    Question: ${questionText}
+    Answer: ${answer || '[No answer provided]'}
+    
+    Return only the JSON object without any markdown formatting:
     {
       "score": (1-10),
       "feedback": "detailed constructive feedback",
@@ -110,11 +122,10 @@ const analyzeAnswer = async (answer, question) => {
     const response = await result.response;
     const text = response.text();
     
-    // Remove any markdown formatting
-    const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
-    
     try {
-      return JSON.parse(jsonStr);
+      const evaluation = JSON.parse(text.replace(/```json\n|\n```|```/g, '').trim());
+      console.log('Evaluation result:', evaluation);
+      return evaluation;
     } catch (e) {
       console.error('Failed to parse evaluation:', e);
       return getDefaultEvaluation();

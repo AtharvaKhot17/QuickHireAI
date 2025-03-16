@@ -10,38 +10,14 @@ const questionService = require('../services/questionService');
 router.post('/start', async (req, res) => {
   try {
     const { interviewCode, skills } = req.body;
-    console.log('Starting interview with skills:', skills);
+    console.log('Starting interview with code:', interviewCode);
 
-    // Generate first question for each skill (total 5 questions)
-    const questions = [];
-    const totalQuestions = 5;
-    const skillsArray = skills.length >= totalQuestions 
-      ? skills.slice(0, totalQuestions) 
-      : [...skills, ...Array(totalQuestions - skills.length).fill(skills[0])];
+    // Initialize interview session
+    const interview = await interviewController.startInterview(interviewCode, skills);
 
-    for (let i = 0; i < totalQuestions; i++) {
-      const question = await geminiService.generateQuestion(
-        skillsArray[i], 
-        questions.map(q => q.question)
-      );
-      questions.push({
-        ...question,
-        id: Math.random().toString(36).substr(2, 9),
-        skill: skillsArray[i],
-        questionNumber: i + 1
-      });
+    if (!interview) {
+      throw new Error('Failed to initialize interview');
     }
-
-    const interview = {
-      id: interviewCode,
-      skills: skillsArray,
-      status: 'active',
-      startTime: new Date(),
-      currentQuestionIndex: 0,
-      totalQuestions: totalQuestions,
-      questions: questions,
-      answers: []
-    };
 
     console.log('Interview initialized:', interview);
 
@@ -81,21 +57,93 @@ router.get('/:id/questions', (req, res) => {
 // Evaluate answer using Gemini
 router.post('/evaluate-answer', async (req, res) => {
   try {
-    const { answer, question, interviewCode } = req.body;
+    const { answer, question, interviewCode, questionNumber } = req.body;
     
-    if (!question) {
-      return res.status(400).json({ error: 'Question is required' });
+    console.log('Received answer evaluation request:', {
+      interviewCode,
+      questionNumber,
+      hasAnswer: !!answer,
+      hasQuestion: !!question,
+      answer: answer.substring(0, 50) + '...' // Log first 50 chars of answer
+    });
+
+    if (!answer || !question) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Answer and question are required'
+      });
     }
 
+    // Get interview session
+    const session = interviewController.getInterviewSession(interviewCode);
+    if (!session) {
+      console.error('Session not found for code:', interviewCode);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Interview session not found'
+      });
+    }
+
+    // Evaluate the answer
+    console.log('Evaluating answer with Gemini...');
     const evaluation = await geminiService.analyzeAnswer(answer, question);
-    
-    res.json({
+    console.log('Answer evaluation:', evaluation);
+
+    // Store the answer
+    session.answers.push({
+      question,
+      answer,
       evaluation,
-      nextQuestion: null // The next question will be handled by the frontend
+      questionNumber
     });
+
+    // Generate next question if not the last question
+    let nextQuestion = null;
+    if (questionNumber < session.totalQuestions - 1) {
+      console.log('Generating next question...');
+      const nextSkill = session.skills[questionNumber + 1];
+      const previousQuestions = session.questions.map(q => q.question);
+      
+      nextQuestion = await geminiService.generateQuestion(
+        nextSkill,
+        previousQuestions
+      );
+
+      // Add metadata to next question
+      nextQuestion = {
+        ...nextQuestion,
+        id: Math.random().toString(36).substr(2, 9),
+        skill: nextSkill,
+        questionNumber: questionNumber + 2
+      };
+
+      // Store the next question
+      session.questions.push(nextQuestion);
+      console.log('Next question generated:', nextQuestion);
+    }
+
+    console.log('Sending response:', {
+      success: true,
+      hasEvaluation: !!evaluation,
+      hasNextQuestion: !!nextQuestion,
+      currentQuestion: questionNumber,
+      totalQuestions: session.totalQuestions
+    });
+
+    res.json({
+      success: true,
+      evaluation,
+      nextQuestion,
+      progress: {
+        current: questionNumber + 1,
+        total: session.totalQuestions
+      }
+    });
+
   } catch (error) {
     console.error('Error evaluating answer:', error);
     res.status(500).json({ 
+      success: false,
       error: 'Error evaluating answer',
       details: error.message
     });

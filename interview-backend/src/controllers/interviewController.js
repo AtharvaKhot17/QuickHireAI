@@ -74,82 +74,89 @@ const analyzeAnswer = async (req, res) => {
 
 const startInterview = async (interviewCode, skills) => {
   try {
-    console.log('Starting interview in controller:', { interviewCode, skills });
+    console.log('Starting interview:', { interviewCode, skills });
     
-    // Initialize Map if not exists
-    const interviews = initializeActiveInterviews();
-
-    // Initialize interview session with default questions
-    const interviewSession = {
-      id: interviewCode,
-      skills: skills,
-      status: 'active',
-      startTime: new Date(),
-      currentSkillIndex: 0,
-      selectedSkills: skills.map(skill => ({ skill })),
-      answers: [],
-      questions: []  // We'll populate this with generated questions
-    };
-
-    // Generate initial questions for each skill
-    for (const skill of skills) {
-      try {
-        const question = await geminiService.generateQuestion(skill);
-        interviewSession.questions.push({
-          ...question,
-          skill: skill,
-          topic: skill,
-          id: Math.random().toString(36).substr(2, 9)
-        });
-      } catch (error) {
-        console.error('Error generating question for skill:', skill, error);
-        // Fallback question if generation fails
-        interviewSession.questions.push({
-          id: Math.random().toString(36).substr(2, 9),
-          question: `Tell me about your experience with ${skill}`,
-          type: "technical",
-          skill: skill,
-          topic: skill,
-          difficulty: "medium",
-          category: "experience",
-          context: `Understanding ${skill} background`
-        });
-      }
+    // Clear any existing session
+    activeInterviews.delete(interviewCode);
+    
+    if (!interviewCode || !skills || !Array.isArray(skills)) {
+      throw new Error('Invalid interview parameters');
     }
 
-    // Log the created session
-    console.log('Interview session created:', interviewSession);
+    const totalQuestions = 5;
+    const skillsArray = skills.length >= totalQuestions 
+      ? skills.slice(0, totalQuestions) 
+      : [...skills, ...Array(totalQuestions - skills.length).fill(skills[0])];
+
+    // Initialize interview session
+    const interviewSession = {
+      id: interviewCode,
+      skills: skillsArray,
+      status: 'active',
+      startTime: new Date(),
+      currentQuestionIndex: 0,
+      totalQuestions,
+      questions: [],
+      answers: []
+    };
+
+    // Generate first question
+    try {
+      const firstQuestion = await geminiService.generateQuestion(skillsArray[0], []);
+      interviewSession.questions.push({
+        ...firstQuestion,
+        id: Math.random().toString(36).substr(2, 9),
+        skill: skillsArray[0],
+        questionNumber: 1
+      });
+    } catch (error) {
+      console.error('Error generating first question:', error);
+      interviewSession.questions.push(getFallbackQuestion(skillsArray[0]));
+    }
 
     // Store the session
-    interviews.set(interviewCode, interviewSession);
-    console.log('Active interviews:', interviews.size);
+    activeInterviews.set(interviewCode, interviewSession);
+    console.log('Interview session created:', interviewSession);
+    console.log('Active sessions:', Array.from(activeInterviews.keys()));
 
     return interviewSession;
   } catch (error) {
-    console.error('Error in startInterview controller:', error);
-    throw new Error(`Failed to start interview: ${error.message}`);
+    console.error('Error in startInterview:', error);
+    throw error;
   }
 };
 
 const getInterviewSession = (interviewCode) => {
-  const interviews = initializeActiveInterviews();
-  const session = interviews.get(interviewCode);
-  if (!session) {
-    throw new Error('Interview session not found');
-  }
+  const session = activeInterviews.get(interviewCode);
+  console.log('Getting session for code:', interviewCode);
+  console.log('Session found:', session ? 'yes' : 'no');
+  console.log('Active sessions:', Array.from(activeInterviews.keys()));
   return session;
 };
 
+// Add a helper function for fallback questions
+const getFallbackQuestion = (skill) => ({
+  question: `Tell me about your experience with ${skill}`,
+  topic: skill,
+  difficulty: "medium",
+  expectedDuration: "2-3 minutes",
+  category: "experience",
+  expectedKeyPoints: ["Technical knowledge", "Practical experience", "Challenges faced"]
+});
+
 const processAnswer = async (req, res) => {
   try {
-    const { interviewId, transcript, currentQuestion, code, skipped } = req.body;
-    console.log('Processing answer:', { interviewId, transcript, currentQuestion });
+    const { interviewId, transcript, currentQuestion, code, skipped, questionNumber } = req.body;
+    console.log('Processing answer:', { interviewId, questionNumber });
 
     const interview = activeInterviews.get(interviewId);
 
     if (!interview) {
       return res.status(404).json({ error: 'Interview session not found' });
     }
+
+    // Check if this is the final question
+    const isFinalQuestion = questionNumber >= interview.totalQuestions - 1;
 
     // Analyze answer using Gemini
     let analysis;
@@ -165,13 +172,7 @@ const processAnswer = async (req, res) => {
         await geminiService.analyzeAnswer(transcript, currentQuestion, code);
     } catch (analysisError) {
       console.error('Error analyzing answer:', analysisError);
-      analysis = {
-        score: 5,
-        feedback: "Error analyzing answer. Please try again.",
-        technicalAccuracy: 5,
-        completeness: 5,
-        clarity: 5
-      };
+      analysis = getDefaultAnalysis();
     }
 
     // Store answer and analysis
@@ -186,34 +187,43 @@ const processAnswer = async (req, res) => {
     const totalScore = interview.answers.reduce((sum, ans) => sum + (ans.analysis?.score || 0), 0);
     interview.currentScore = totalScore / interview.answers.length;
 
-    // Get next skill
-    interview.currentSkillIndex = (interview.currentSkillIndex + 1) % interview.selectedSkills.length;
-    const nextSkill = interview.selectedSkills[interview.currentSkillIndex];
-    
+    // If it's the final question, don't generate next question
+    if (isFinalQuestion) {
+      interview.status = 'completed';
+      return res.json({
+        success: true,
+        evaluation: analysis,
+        isComplete: true,
+        finalScore: interview.currentScore
+      });
+    }
+
     // Generate next question
+    const nextSkill = interview.skills[questionNumber + 1];
+    const previousQuestions = interview.questions.map(q => q.question);
+    
     let nextQuestion;
     try {
-      nextQuestion = await geminiService.generateQuestion(nextSkill.skill);
-    } catch (questionError) {
-      console.error('Error generating next question:', questionError);
+      nextQuestion = await geminiService.generateQuestion(nextSkill, previousQuestions);
       nextQuestion = {
-        question: `Tell me about your experience with ${nextSkill.skill}`,
-        topic: nextSkill.skill,
-        difficulty: "medium"
+        ...nextQuestion,
+        id: Math.random().toString(36).substr(2, 9),
+        skill: nextSkill,
+        questionNumber: questionNumber + 1
       };
+    } catch (error) {
+      console.error('Error generating next question:', error);
+      nextQuestion = getFallbackQuestion(nextSkill, previousQuestions);
     }
 
     res.json({
-      score: analysis.score,
-      feedback: analysis.feedback,
-      technicalAccuracy: analysis.technicalAccuracy,
-      completeness: analysis.completeness,
-      clarity: analysis.clarity,
-      codeQuality: analysis.codeQuality,
-      improvements: analysis.improvements,
+      success: true,
+      evaluation: analysis,
       nextQuestion,
-      nextTopic: nextSkill.skill,
-      currentScore: interview.currentScore
+      progress: {
+        current: questionNumber + 1,
+        total: interview.totalQuestions
+      }
     });
 
   } catch (error) {
@@ -224,6 +234,14 @@ const processAnswer = async (req, res) => {
     });
   }
 };
+
+const getDefaultAnalysis = () => ({
+  score: 5,
+  feedback: "Error analyzing answer. Please try again.",
+  technicalAccuracy: 5,
+  completeness: 5,
+  clarity: 5
+});
 
 const endInterview = async (req, res) => {
   try {
