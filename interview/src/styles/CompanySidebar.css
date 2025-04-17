@@ -1,4 +1,3 @@
-/* Move all sidebar-specific styles from StudentDashboard.css to here */
 .sidebar {
   width: 280px;
   height: 100vh;
@@ -146,4 +145,4 @@
   .menu-section {
     width: 100%;
   }
-}
+} 

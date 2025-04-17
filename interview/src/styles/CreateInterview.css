@@ -1,0 +1,428 @@
+.create-interview-container {
+  padding: 2rem 1.5rem;
+  width: 100%;
+  min-height: calc(100vh - 64px); /* Adjust for header if any */
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.create-interview-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 1rem;
+}
+
+.create-interview-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+
+.create-interview-header p {
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding: 1.25rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  width: calc(100% - 2rem);
+  max-width: 800px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+  min-width: 120px;
+}
+
+.step-number {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.step span {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.step.active span {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.step-line {
+  flex: 1;
+  height: 3px;
+  background: #e2e8f0;
+  margin: 0 1.5rem;
+  position: relative;
+  top: -22px;
+  z-index: 0;
+  transition: all 0.3s ease;
+  min-width: 60px;
+}
+
+.step-line.active {
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+}
+
+.create-interview-form {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  width: calc(100% - 2rem);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.form-section {
+  animation: fadeIn 0.3s ease;
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 2rem;
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 2rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #1e293b;
+  background: white;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Roles Grid */
+.roles-group {
+  margin-top: 2.5rem;
+}
+
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.role-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.role-checkbox:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.role-checkbox input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #3b82f6;
+  cursor: pointer;
+  margin: 0;
+}
+
+.role-label {
+  font-size: 1rem;
+  color: #1e293b;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Skills Grid */
+.skills-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+.skills-group {
+  background: rgba(59, 130, 246, 0.03);
+  padding: 2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.skills-group h3 {
+  color: #1e293b;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.skill-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.skill-checkbox:hover {
+  background: rgba(59, 130, 246, 0.02);
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.08);
+}
+
+.skill-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  margin: 0;
+}
+
+.skill-label {
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+/* Settings Grid */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Form Actions */
+.form-actions {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.prev-button,
+.next-button,
+.create-button {
+  padding: 1rem 2rem;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.prev-button {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.prev-button:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.next-button {
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.next-button:hover,
+.create-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.create-button {
+  background: linear-gradient(45deg, #3b82f6, #10b981);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  min-width: 200px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .create-interview-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .create-interview-form {
+    padding: 2rem;
+  }
+
+  .roles-grid,
+  .skills-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .create-interview-container {
+    padding: 1rem;
+  }
+
+  .create-interview-header h1 {
+    font-size: 2rem;
+  }
+
+  .create-interview-form {
+    padding: 1.5rem;
+    width: calc(100% - 1rem);
+  }
+
+  .roles-grid,
+  .skills-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-indicator {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    width: calc(100% - 1rem);
+  }
+
+  .step {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .prev-button,
+  .next-button,
+  .create-button {
+    width: 100%;
+  }
+} 
