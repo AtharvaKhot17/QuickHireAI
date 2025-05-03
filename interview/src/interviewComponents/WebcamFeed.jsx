@@ -1,117 +1,116 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import Webcam from 'react-webcam';
-import faceDetectionService from '../services/faceDetectionService';
-import { api } from '../services/api';
-import "../styles/WebcamFeed.css";
+import { FaceMesh } from '@mediapipe/face_mesh';
+import { Camera } from '@mediapipe/camera_utils';
+import '../styles/WebcamFeed.css';
 
-const WebcamFeed = () => {
-  const [error, setError] = useState(null);
-  const [faceDetection, setFaceDetection] = useState(null);
+const WebcamFeed = ({ onConfidenceScore }) => {
   const webcamRef = useRef(null);
-  const detectionInterval = useRef(null);
-
-  const videoConstraints = {
-    width: 400,
-    height: 300,
-    facingMode: "user"
-  };
+  const [confidence, setConfidence] = useState(0);
+  const [faceDetected, setFaceDetected] = useState(false);
 
   useEffect(() => {
-    // Start face detection when component mounts
-    startFaceDetection();
+    let camera = null;
+    let faceMesh = null;
 
-    // Cleanup when component unmounts
-    return () => {
-      if (detectionInterval.current) {
-        clearInterval(detectionInterval.current);
-      }
-    };
-  }, []);
-
-  const startFaceDetection = async () => {
-    try {
-      // Initialize face detection service
-      await faceDetectionService.initialize();
-
-      // Start periodic face detection
-      detectionInterval.current = setInterval(async () => {
-        if (webcamRef.current && webcamRef.current.video) {
-          try {
-            const detection = await faceDetectionService.detectFace(webcamRef.current.video);
-            setFaceDetection(detection);
-
-            // Send face detection data to backend
-            if (detection.faceBox) {
-              await api.post('/interviews/face-analysis', {
-                faceBox: detection.faceBox,
-                frameSize: {
-                  width: webcamRef.current.video.videoWidth,
-                  height: webcamRef.current.video.videoHeight
-                }
-              });
-            }
-          } catch (error) {
-            console.warn('Face detection error:', error);
-            // Continue with default values
-            setFaceDetection({
-              faceDetected: true,
-              confidenceScore: 1,
-              warning: null
-            });
-          }
-        }
-      }, 1000); // Check every second
-    } catch (error) {
-      console.warn('Face detection initialization error:', error);
-      // Continue with default values
-      setFaceDetection({
-        faceDetected: true,
-        confidenceScore: 1,
-        warning: null
+    const setupFaceMesh = async () => {
+      faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
-    }
-  };
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
 
-  const handleError = (err) => {
-    console.error('Webcam Error:', err);
-    setError('Failed to access camera');
-  };
+      faceMesh.onResults((results) => {
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+          setFaceDetected(true);
+          const landmarks = results.multiFaceLandmarks[0];
+          // Use nose tip (landmark 1) for center calculation
+          const nose = landmarks[1];
+          const video = webcamRef.current.video;
+          const frameCenter = { x: video.videoWidth / 2, y: video.videoHeight / 2 };
+          const dx = (nose.x * video.videoWidth) - frameCenter.x;
+          const dy = (nose.y * video.videoHeight) - frameCenter.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = Math.sqrt(Math.pow(frameCenter.x, 2) + Math.pow(frameCenter.y, 2));
+          const centerScore = 1 - Math.min(dist / maxDist, 1);
+          const score = Math.round(centerScore * 100);
+          setConfidence(score);
+          if (onConfidenceScore) onConfidenceScore(score);
+        } else {
+          setFaceDetected(false);
+          setConfidence(0);
+          if (onConfidenceScore) onConfidenceScore(0);
+        }
+      });
+
+      camera = new Camera(webcamRef.current.video, {
+        onFrame: async () => {
+          await faceMesh.send({ image: webcamRef.current.video });
+        },
+        width: 400,
+        height: 300,
+      });
+      camera.start();
+    };
+
+    if (webcamRef.current && webcamRef.current.video) {
+      setupFaceMesh();
+    }
+
+    return () => {
+      if (camera) camera.stop();
+    };
+  }, [onConfidenceScore]);
 
   return (
     <div className="webcam-container">
-      {error ? (
-        <div className="webcam-error">
-          <i className="fas fa-video-slash"></i>
-          <p>{error}</p>
-          <p>Please ensure your camera is connected and permissions are granted.</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
+      <div className="video-wrapper">
+        <Webcam
+          ref={webcamRef}
+          audio={false}
+          videoConstraints={{ width: 400, height: 300, facingMode: "user" }}
+          className="webcam-feed"
+          style={{
+            objectFit: 'cover',
+            width: 400,
+            height: 300,
+            borderRadius: 10,
+            transform: 'none' // <--- NOT MIRRORED
+          }}
+        />
+        <div className="face-detection-overlay" style={{
+          position: 'absolute',
+          left: 0, right: 0, bottom: 0,
+          background: 'rgba(255,255,255,0.85)',
+          borderTopLeftRadius: 10,
+          borderTopRightRadius: 10,
+          padding: '0.5rem 1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.04)',
+          border: faceDetected ? '2px solid #22c55e' : '2px solid #ef4444'
+        }}>
+          <div className="confidence-score" style={{
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: '#222',
+            marginTop: '0.2rem',
+            background: '#f3f4f6',
+            borderRadius: 6,
+            padding: '0.2rem 0.7rem',
+            display: 'inline-block'
+          }}>
+            Confidence: {confidence}%
+          </div>
         </div>
-      ) : (
-        <div className="video-wrapper">
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            videoConstraints={videoConstraints}
-            onUserMediaError={handleError}
-            className="webcam-feed"
-          />
-          {faceDetection && (
-            <div className={`face-detection-overlay ${faceDetection.faceDetected ? 'detected' : 'not-detected'}`}>
-              {faceDetection.warning && (
-                <div className="face-warning">
-                  <p>{faceDetection.warning}</p>
-                </div>
-              )}
-              <div className="confidence-score">
-                <span className="score-label">Confidence:</span>
-                <span className="score-value">{Math.round(faceDetection.confidenceScore)}%</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default WebcamFeed; 
+export default WebcamFeed;

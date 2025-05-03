@@ -19,6 +19,12 @@ const FinalEvaluation = ({ evaluation, answers }) => {
   const scoreAngle = Math.min(360, (score / 10) * 360);
   const scoreColorClass = getScoreColor(score);
 
+  // Calculate average confidence score from all answers
+  const avgConfidence = answers.length ? (
+    answers.reduce((sum, a) => sum + (a.confidenceScore || 0), 0) / answers.length
+  ) : 0;
+  const confidenceColorClass = getScoreColor(avgConfidence / 10); // scale to 0-10
+
   return (
     <div className="final-evaluation">
       <h2>Interview Evaluation</h2>
@@ -36,6 +42,10 @@ const FinalEvaluation = ({ evaluation, answers }) => {
             <span className={`score-main ${scoreColorClass}`}>{score}</span>
             <span className="score-max">/10</span>
           </div>
+        </div>
+        <div className={`confidence-score ${confidenceColorClass}`} style={{marginTop: '1rem', display: 'inline-block', minWidth: 120, fontWeight: 600}}>
+          <span style={{fontSize: '1.1rem'}}>Avg. Confidence: </span>
+          <span className="confidence-value" style={{fontSize: '1.5rem'}}>{avgConfidence.toFixed(1)}%</span>
         </div>
       </div>
 
