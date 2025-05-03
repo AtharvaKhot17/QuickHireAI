@@ -1,53 +1,8 @@
-// import { useState } from "react";
-// import CompanySidebar from "./companyComponents/CompanySidebar";
-// import CompanyHome from "./companyComponents/CompanyHome";
-// import CreateInterview from "./companyComponents/CreateInterview";
-// import UploadCandidates from "./companyComponents/UploadCandidates";
-// import CandidateReports from "./companyComponents/CandidateReports";
-// import CompanyInterviews from "./companyComponents/CompanyInterviews";
-// import "./styles/App.css";
-
-// function App() {
-//   const [activeSection, setActiveSection] = useState("home");
-
-//   const renderContent = () => {
-//     switch (activeSection) {
-//       case "home":
-//         return <CompanyHome setActiveSection={setActiveSection} />;
-//       case "create-interview":
-//         return <CreateInterview />;
-//       case "upload-candidates":
-//         return <UploadCandidates />;
-//       case "candidates":
-//         return <CompanyInterviews />;
-//       case "reports":
-//         return <CandidateReports />;
-//       default:
-//         return <CompanyHome setActiveSection={setActiveSection} />;
-//     }
-//   };
-
-//   return (
-//     <div className="dashboard-container">
-//       <CompanySidebar
-//         setActiveSection={setActiveSection}
-//         activeSection={activeSection}
-//       />
-//       <main className="main-content">
-//         <div className="content-wrapper">
-//           {renderContent()}
-//         </div>
-//       </main>
-//     </div>
-//   );
-// }
-
-// export default App;
-
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import styled from 'styled-components';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import StudentDashboard from './pages/StudentDashboard';
 import InterviewSession from './pages/InterviewSession';
 import InterviewGuidelines from './interviewComponents/InterviewGuidelines';
@@ -67,9 +22,10 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<StudentDashboard />} />
-        <Route path="/company-dashboard" element={<CompanyDashboard />} />
-        <Route path="/interview">
+        <Route path="/company-dashboard/*" element={<CompanyDashboard />} />
+        <Route path="/interview" element={<Outlet />}>
           <Route path="guidelines/:interviewCode" element={<InterviewGuidelines />} />
           <Route path="skills/:interviewCode" element={<SkillsSelection />} />
           <Route path="session/:interviewCode" element={<InterviewSession />} />

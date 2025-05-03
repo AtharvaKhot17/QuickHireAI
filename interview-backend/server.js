@@ -1,6 +1,7 @@
 // Load environment variables first, before any other imports
 const path = require('path');
 const fs = require('fs');
+const connectDB = require('./src/config/db');
 
 // Use the same approach that worked in your scripts
 try {
@@ -36,6 +37,10 @@ const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const interviewRoutes = require('./src/routes/interviewRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+
+// Connect to MongoDB
+connectDB();
 
 // Add detailed debugging
 console.log('Final Environment Check:', {
@@ -46,7 +51,8 @@ console.log('Final Environment Check:', {
 });
 
 const app = express();
-const port = 5000;
+const preferredPort = 5001;
+let port = preferredPort;
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -59,43 +65,98 @@ const upload = multer({
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Your frontend URL
+  origin: ['http://localhost:5173', 'http://localhost:5001'],
   credentials: true
 }));
 app.use(express.json());
 app.use(express.static('public'));
 
 // Apply multer middleware to specific routes
-app.use('/api/interview/answer', upload.single('audioBlob'));
-app.use('/api/interview/submit-all', upload.array('answer', 10));
+app.use('/api/interviews/answer', upload.single('audioBlob'));
+app.use('/api/interviews/submit-all', upload.array('answer', 10));
 
 // Routes
-app.use('/api/interview', interviewRoutes);
+app.use('/api/auth', userRoutes);
+app.use('/api/interviews', interviewRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
   
+  // Handle specific error types
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ 
+      success: false,
       error: 'File Upload Error',
       message: err.message 
     });
   }
   
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation Error',
+      message: err.message,
+      details: err.errors
+    });
+  }
+
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid ID',
+      message: 'The provided ID is invalid'
+    });
+  }
+  
   if (err.message.includes('Gemini')) {
     return res.status(500).json({ 
+      success: false,
       error: 'AI Service Error',
       message: 'Error processing with Gemini API'
     });
   }
+
+  // Handle JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid Token',
+      message: 'Please login again'
+    });
+  }
+
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      success: false,
+      error: 'Token Expired',
+      message: 'Please login again'
+    });
+  }
   
+  // Default error response
   res.status(500).json({ 
+    success: false,
     error: 'Internal Server Error',
-    message: err.message 
+    message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred'
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// Function to start server with fallback ports
+const startServer = (portToTry) => {
+  app.listen(portToTry, () => {
+    console.log(`Server running on http://localhost:${portToTry}`);
+    port = portToTry; // Update the port variable
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${portToTry} is busy, trying ${portToTry + 1}...`);
+      startServer(portToTry + 1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+};
+
+// Start the server with the preferred port
+startServer(preferredPort);

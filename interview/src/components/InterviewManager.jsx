@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import WebcamFeed from '../interviewComponents/WebcamFeed';
 import speechRecognitionService from '../services/speechRecognitionService';
+import { api } from '../services/api';
+import "../styles/InterviewManager.css";
 
 const InterviewManager = () => {
   const { interviewCode } = useParams();
@@ -26,26 +28,19 @@ const InterviewManager = () => {
         throw new Error('Missing interview data');
       }
 
-      const response = await fetch('http://localhost:5000/api/interview/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          interviewCode: location.state.interviewCode,
-          skills: location.state.skills
-        })
+      const response = await api.post('/interviews/start', {
+        interviewCode: location.state.interviewCode,
+        skills: location.state.skills
       });
 
-      const data = await response.json();
-      console.log('Interview initialization response:', data);
+      console.log('Interview initialization response:', response.data);
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to initialize interview');
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to initialize interview');
       }
 
-      if (data.interview && data.interview.questions && data.interview.questions.length > 0) {
-        setCurrentQuestion(data.interview.questions[0]);
+      if (response.data.interview && response.data.interview.questions && response.data.interview.questions.length > 0) {
+        setCurrentQuestion(response.data.interview.questions[0]);
       } else {
         throw new Error('No questions received');
       }

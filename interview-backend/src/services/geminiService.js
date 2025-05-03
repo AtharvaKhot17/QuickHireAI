@@ -1,9 +1,40 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Check if API key is available
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY is not set in environment variables');
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite-001" });
 
 const getFallbackQuestion = (skill, previousQuestions = []) => {
-  const fallbackQuestions = [
+  const skillSpecificQuestions = {
+    'C++': [
+      'Explain the difference between stack and heap memory in C++.',
+      'How do you handle memory management in C++?',
+      'What are smart pointers and how do they help prevent memory leaks?',
+      'Explain the concept of RAII in C++.',
+      'How do you implement polymorphism in C++?'
+    ],
+    'MongoDB': [
+      'Explain the difference between MongoDB and traditional SQL databases.',
+      'How do you design a schema in MongoDB?',
+      'What are MongoDB indexes and how do they improve performance?',
+      'Explain the concept of sharding in MongoDB.',
+      'How do you handle transactions in MongoDB?'
+    ],
+    'TypeScript': [
+      'Explain the benefits of using TypeScript over JavaScript.',
+      'How do you handle type definitions in TypeScript?',
+      'What are generics in TypeScript and when would you use them?',
+      'Explain the concept of interfaces in TypeScript.',
+      'How do you handle type checking in TypeScript?'
+    ]
+  };
+
+  // Get skill-specific questions or use generic ones
+  const questions = skillSpecificQuestions[skill] || [
     `Explain the core concepts of ${skill} and their practical applications.`,
     `What are the best practices you follow when working with ${skill}?`,
     `Describe a challenging problem you've solved using ${skill}.`,
@@ -12,11 +43,11 @@ const getFallbackQuestion = (skill, previousQuestions = []) => {
   ];
 
   // Filter out previously used questions
-  const unusedQuestions = fallbackQuestions.filter(q => 
+  const unusedQuestions = questions.filter(q => 
     !previousQuestions.some(prevQ => calculateSimilarity(prevQ, q) > 0.7)
   );
 
-  // If all fallback questions are used, create a variation
+  // If all questions are used, create a variation
   const question = unusedQuestions.length > 0 
     ? unusedQuestions[0]
     : `Tell me about your experience with ${skill} and any recent projects.`;
@@ -27,7 +58,10 @@ const getFallbackQuestion = (skill, previousQuestions = []) => {
     difficulty: "medium",
     expectedDuration: "2-3 minutes",
     category: "experience",
-    expectedKeyPoints: ["Technical knowledge", "Practical experience", "Challenges faced"]
+    expectedKeyPoints: ["Technical knowledge", "Practical experience", "Challenges faced"],
+    id: Math.random().toString(36).substring(2, 10),
+    skill,
+    questionNumber: previousQuestions.length + 1
   };
 };
 
@@ -60,11 +94,17 @@ const generateQuestion = async (skill, previousQuestions = []) => {
     const response = await result.response;
     const text = response.text();
     
+    // Clean the response text
     const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
     
     try {
       const question = JSON.parse(jsonStr);
       
+      // Validate required fields
+      if (!question.question || !question.topic || !question.difficulty) {
+        throw new Error('Invalid question format');
+      }
+
       // Check if question is too similar to previous questions
       const isDuplicate = previousQuestions.some(prevQ => {
         const similarity = calculateSimilarity(prevQ, question.question);
@@ -97,52 +137,78 @@ const calculateSimilarity = (str1, str2) => {
 
 const analyzeAnswer = async (answer, question) => {
   try {
-    // Make sure we have the question text
-    const questionText = typeof question === 'string' ? question : 
-                        question.question || 'Unknown question';
-    
-    console.log('Analyzing answer:', { questionText, answer });
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn('GEMINI_API_KEY not set, using default evaluation');
+      return getDefaultEvaluation(answer, question);
+    }
 
-    const prompt = `Evaluate this technical interview answer:
-    Question: ${questionText}
-    Answer: ${answer || '[No answer provided]'}
+    const prompt = `Evaluate this interview answer:
+    Question: ${question}
+    Answer: ${answer}
     
-    Return only the JSON object without any markdown formatting:
+    Provide a detailed evaluation in this JSON format:
     {
-      "score": (1-10),
-      "feedback": "detailed constructive feedback",
-      "technicalAccuracy": (1-10),
-      "communication": (1-10),
-      "keyPointsCovered": ["covered points"],
-      "missingPoints": ["missing points"],
-      "improvements": ["specific improvement suggestions"]
+      "score": number between 0-10,
+      "feedback": "detailed feedback on the answer",
+      "technicalAccuracy": number between 0-10,
+      "communication": number between 0-10,
+      "improvements": ["specific areas for improvement"]
     }`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
+    // Clean the response text
+    const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
+    
     try {
-      const evaluation = JSON.parse(text.replace(/```json\n|\n```|```/g, '').trim());
-      console.log('Evaluation result:', evaluation);
+      const evaluation = JSON.parse(jsonStr);
+      
+      // Validate required fields
+      if (!evaluation.score || !evaluation.feedback) {
+        throw new Error('Invalid evaluation format');
+      }
+
       return evaluation;
     } catch (e) {
-      console.error('Failed to parse evaluation:', e);
-      return getDefaultEvaluation();
+      console.error('Failed to parse Gemini response:', e);
+      return getDefaultEvaluation(answer, question);
     }
   } catch (error) {
     console.error('Error evaluating answer:', error);
-    return getDefaultEvaluation();
+    return getDefaultEvaluation(answer, question);
   }
 };
 
-const getDefaultEvaluation = () => ({
-  score: 5,
-  feedback: "Unable to evaluate answer",
-  technicalAccuracy: 5,
-  communication: 5,
-  improvements: ["Please provide a more detailed answer"]
-});
+const getDefaultEvaluation = (answer, question) => {
+  // Skip if answer is empty or "Question skipped"
+  if (!answer || answer.toLowerCase().includes('skipped')) {
+    return {
+      score: 0,
+      feedback: 'Question was skipped',
+      technicalAccuracy: 0,
+      communication: 0,
+      improvements: ['Please provide a detailed answer']
+    };
+  }
+
+  // Basic evaluation based on answer length and content
+  const answerLength = answer.length;
+  const hasTechnicalTerms = /(function|class|method|variable|loop|condition|algorithm|data structure|database|api|framework)/i.test(answer);
+  
+  return {
+    score: Math.min(5 + (answerLength / 100), 10),
+    feedback: hasTechnicalTerms ? 'Answer shows some technical understanding' : 'Answer needs more technical depth',
+    technicalAccuracy: hasTechnicalTerms ? 5 : 3,
+    communication: Math.min(5 + (answerLength / 200), 10),
+    improvements: [
+      'Provide more specific examples',
+      'Explain technical concepts in more detail',
+      'Structure your answer with clear points'
+    ]
+  };
+};
 
 const createDefaultEvaluation = () => {
   return {
@@ -181,86 +247,84 @@ const generateFinalEvaluation = async (answers) => {
           codingAbility: 0
         },
         strengths: ["No strengths to evaluate - all questions were skipped"],
-        areasForImprovement: [
-          "Attempt to answer interview questions",
-          "Practice technical communication",
-          "Build confidence in technical discussions"
-        ],
-        feedback: "No questions were attempted. Consider practicing with mock interviews to build confidence.",
-        careerReadiness: {
-          level: "Needs Practice",
-          recommendation: "We recommend practicing with mock interviews and reviewing fundamental concepts before attempting another interview."
-        },
-        questionAnalysis: answers.map((_, i) => ({
-          questionNumber: i + 1,
-          performance: "Question was skipped",
-          score: 0
-        }))
+        areasForImprovement: ["Please attempt to answer the questions to receive a proper evaluation"]
       };
     }
 
-    const prompt = `Analyze these interview answers and provide a comprehensive evaluation:
+    // Calculate weighted scores
+    const technicalWeight = 0.6; // 60% weight for technical aspects
+    const communicationWeight = 0.2; // 20% weight for communication
+    const problemSolvingWeight = 0.2; // 20% weight for problem solving
 
-${answers.map((a, i) => `
-Question ${i + 1}: ${a.question.question}
-Answer: ${a.answer || 'Skipped'}
-${a.code ? `Code: ${a.code}` : ''}
-`).join('\n')}
+    // Calculate average scores for each category
+    const technicalScores = answers.map(a => a.evaluation?.technicalAccuracy || 0);
+    const communicationScores = answers.map(a => a.evaluation?.communication || 0);
+    const problemSolvingScores = answers.map(a => a.evaluation?.score || 0);
 
-Provide a final evaluation with these exact keys (no additional text or markdown):
-{
-  "overallScore": (number 0-10),
-  "skillAssessment": {
-    "technicalKnowledge": (number 0-10),
-    "communicationSkills": (number 0-10),
-    "problemSolving": (number 0-10),
-    "codingAbility": (number 0-10)
-  },
-  "strengths": ["list of strengths"],
-  "areasForImprovement": ["list of areas to improve"],
-  "feedback": "detailed feedback string",
-  "careerReadiness": {
-    "level": "string indicating readiness level",
-    "recommendation": "specific recommendation string"
-  },
-  "questionAnalysis": [
+    const avgTechnicalScore = technicalScores.reduce((a, b) => a + b, 0) / technicalScores.length;
+    const avgCommunicationScore = communicationScores.reduce((a, b) => a + b, 0) / communicationScores.length;
+    const avgProblemSolvingScore = problemSolvingScores.reduce((a, b) => a + b, 0) / problemSolvingScores.length;
+
+    // Calculate weighted overall score
+    const overallScore = (
+      (avgTechnicalScore * technicalWeight) +
+      (avgCommunicationScore * communicationWeight) +
+      (avgProblemSolvingScore * problemSolvingWeight)
+    );
+
+    // Generate detailed feedback
+    const prompt = `Based on these interview answers and their evaluations:
+    ${answers.map((a, i) => `
+    Question ${i + 1}: ${a.question}
+    Answer: ${a.answer}
+    Technical Score: ${a.evaluation?.technicalAccuracy || 0}/10
+    Communication Score: ${a.evaluation?.communication || 0}/10
+    Feedback: ${a.evaluation?.feedback || 'No feedback available'}
+    `).join('\n')}
+    
+    Provide a comprehensive final evaluation in this JSON format:
     {
-      "questionNumber": 1,
-      "performance": "brief performance description",
-      "score": (number 0-10)
-    }
-  ]
-}`;
+      "overallScore": number between 0-10,
+      "skillAssessment": {
+        "technicalKnowledge": number between 0-10,
+        "communicationSkills": number between 0-10,
+        "problemSolving": number between 0-10
+      },
+      "strengths": ["list of key strengths"],
+      "areasForImprovement": ["list of areas needing improvement"],
+      "careerReadiness": {
+        "level": "entry/mid/senior",
+        "recommendation": "specific career advice"
+      }
+    }`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
-    // Clean the response text to ensure valid JSON
+    // Clean the response text
     const jsonStr = text.replace(/```json\n|\n```|```/g, '').trim();
     
     try {
       const evaluation = JSON.parse(jsonStr);
-      return {
-        ...evaluation,
-        answers: answers.map(a => ({
-          question: a.question.question,
-          answer: a.answer || "Question was skipped",
-          code: a.code,
-          evaluation: a.evaluation || {
-            score: 0,
-            feedback: "Question was skipped",
-            technicalAccuracy: 0,
-            communication: 0
-          }
-        }))
+      
+      // Override the overall score with our weighted calculation
+      evaluation.overallScore = overallScore;
+      
+      // Ensure skill assessment reflects the weighted scores
+      evaluation.skillAssessment = {
+        technicalKnowledge: avgTechnicalScore,
+        communicationSkills: avgCommunicationScore,
+        problemSolving: avgProblemSolvingScore
       };
-    } catch (error) {
-      console.error("Error parsing evaluation JSON:", error);
+
+      return evaluation;
+    } catch (e) {
+      console.error('Failed to parse Gemini response:', e);
       return createDefaultFinalEvaluation(answers);
     }
   } catch (error) {
-    console.error("Error generating final evaluation:", error);
+    console.error('Error generating final evaluation:', error);
     return createDefaultFinalEvaluation(answers);
   }
 };

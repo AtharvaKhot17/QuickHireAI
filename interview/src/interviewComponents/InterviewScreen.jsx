@@ -1,3 +1,6 @@
+// 
+
+
 import { useState, useEffect, useRef } from "react";
 import WebcamFeed from "./WebcamFeed";
 import { api } from "../services/api";
@@ -56,7 +59,7 @@ const InterviewScreen = () => {
           sessionStorage.setItem('interviewData', JSON.stringify({ interviewCode }));
         }
 
-        const response = await api.post('/interview/start', {
+        const response = await api.post('/interviews/start', {
           interviewCode,
           skills
         });
@@ -164,7 +167,7 @@ const InterviewScreen = () => {
       };
       console.log('Submitting answer with payload:', payload);
 
-      const response = await api.post('/interview/evaluate-answer', payload);
+      const response = await api.post('/interviews/evaluate-answer', payload);
 
       console.log('Evaluation response:', response.data);
 
@@ -211,7 +214,7 @@ const InterviewScreen = () => {
   const handleInterviewCompletion = async () => {
     try {
       setIsProcessing(true);
-      const finalEval = await api.post('/interview/final-evaluation', {
+      const finalEval = await api.post('/interviews/final-evaluation', {
         answers,
         skills: location.state.skills || JSON.parse(sessionStorage.getItem('selectedSkills'))
       });
@@ -236,7 +239,7 @@ const InterviewScreen = () => {
       console.log('Skipping question:', questionIndex);
 
       // Submit a skipped answer to maintain the flow
-      const response = await api.post('/interview/evaluate-answer', {
+      const response = await api.post('/interviews/evaluate-answer', {
         answer: "Question skipped by user",
         question: currentQuestion,
         interviewCode,

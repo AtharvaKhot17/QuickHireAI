@@ -1,8 +1,41 @@
+import { useNavigate } from "react-router-dom";
 import "../styles/CompanySidebar.css";
 
-const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
+const CompanySidebar = ({ activeSection }) => {
+  const navigate = useNavigate();
+
   const handleLogout = () => {
-    navigate("/");
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
+  const handleNavigation = (section) => {
+    switch (section) {
+      case "home":
+        navigate("/company-dashboard");
+        break;
+      case "create-interview":
+        navigate("/company-dashboard/create-interview");
+        break;
+      case "candidates":
+        navigate("/company-dashboard/candidates");
+        break;
+      case "reports":
+        navigate("/company-dashboard/reports");
+        break;
+      case "profile":
+        navigate("/company-dashboard/profile");
+        break;
+      case "settings":
+        navigate("/company-dashboard/settings");
+        break;
+      case "team":
+        navigate("/company-dashboard/team");
+        break;
+      default:
+        navigate("/company-dashboard");
+    }
   };
 
   return (
@@ -20,7 +53,7 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
           <ul>
             <li
               className={activeSection === "home" ? "active" : ""}
-              onClick={() => setActiveSection("home")}
+              onClick={() => handleNavigation("home")}
             >
               <div className="menu-item">
                 <i className="fas fa-home"></i>
@@ -29,7 +62,7 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
             </li>
             <li
               className={activeSection === "create-interview" ? "active" : ""}
-              onClick={() => setActiveSection("create-interview")}
+              onClick={() => handleNavigation("create-interview")}
             >
               <div className="menu-item">
                 <i className="fas fa-plus-circle"></i>
@@ -37,17 +70,8 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
               </div>
             </li>
             <li
-              className={activeSection === "upload-candidates" ? "active" : ""}
-              onClick={() => setActiveSection("upload-candidates")}
-            >
-              <div className="menu-item">
-                <i className="fas fa-file-upload"></i>
-                <span>Upload Candidates</span>
-              </div>
-            </li>
-            <li
               className={activeSection === "candidates" ? "active" : ""}
-              onClick={() => setActiveSection("candidates")}
+              onClick={() => handleNavigation("candidates")}
             >
               <div className="menu-item">
                 <i className="fas fa-users"></i>
@@ -56,7 +80,7 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
             </li>
             <li
               className={activeSection === "reports" ? "active" : ""}
-              onClick={() => setActiveSection("reports")}
+              onClick={() => handleNavigation("reports")}
             >
               <div className="menu-item">
                 <i className="fas fa-chart-bar"></i>
@@ -67,35 +91,20 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
         </div>
 
         <div className="menu-section">
-          <span className="section-title">MANAGEMENT</span>
-          <ul>
-            <li
-              className={activeSection === "positions" ? "active" : ""}
-              onClick={() => setActiveSection("positions")}
-            >
-              <div className="menu-item">
-                <i className="fas fa-briefcase"></i>
-                <span>Positions</span>
-              </div>
-            </li>
-            <li
-              className={activeSection === "templates" ? "active" : ""}
-              onClick={() => setActiveSection("templates")}
-            >
-              <div className="menu-item">
-                <i className="fas fa-file-alt"></i>
-                <span>Templates</span>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <div className="menu-section">
           <span className="section-title">ACCOUNT</span>
           <ul>
             <li
+              className={activeSection === "profile" ? "active" : ""}
+              onClick={() => handleNavigation("profile")}
+            >
+              <div className="menu-item">
+                <i className="fas fa-user"></i>
+                <span>Profile</span>
+              </div>
+            </li>
+            <li
               className={activeSection === "settings" ? "active" : ""}
-              onClick={() => setActiveSection("settings")}
+              onClick={() => handleNavigation("settings")}
             >
               <div className="menu-item">
                 <i className="fas fa-cog"></i>
@@ -104,7 +113,7 @@ const CompanySidebar = ({ setActiveSection, activeSection, navigate }) => {
             </li>
             <li
               className={activeSection === "team" ? "active" : ""}
-              onClick={() => setActiveSection("team")}
+              onClick={() => handleNavigation("team")}
             >
               <div className="menu-item">
                 <i className="fas fa-users-cog"></i>

@@ -6,6 +6,7 @@ import CompanyInterviews from "../companyComponents/CompanyInterviews";
 import CreateInterview from "../companyComponents/CreateInterview";
 import UploadCandidates from "../companyComponents/UploadCandidates";
 import CandidateReports from "../companyComponents/CandidateReports";
+import CompanyProfile from "../companyComponents/CompanyProfile";
 import "../styles/CompanyDashboard.css";
 
 const CompanyDashboard = () => {
@@ -24,6 +25,16 @@ const CompanyDashboard = () => {
         return <CandidateReports />;
       case "interviews":
         return <CompanyInterviews />;
+      case "profile":
+        return <CompanyProfile />;
+      case "settings":
+        return <div>Settings Page</div>;
+      case "team":
+        return <div>Team Management Page</div>;
+      case "positions":
+        return <div>Positions Page</div>;
+      case "templates":
+        return <div>Templates Page</div>;
       default:
         return <CompanyHome setActiveSection={setActiveSection} />;
     }

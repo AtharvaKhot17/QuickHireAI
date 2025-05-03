@@ -1,3 +1,5 @@
+// 
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/FinalEvaluation.css';
@@ -8,8 +10,14 @@ const FinalEvaluation = ({ evaluation, answers }) => {
   const getScoreColor = (score) => {
     if (score >= 8) return 'excellent';
     if (score >= 6) return 'good';
-    return 'needs-improvement';
+    if (score >= 4) return 'needs-improvement';
+    return 'poor';
   };
+
+  // Calculate the angle for the conic-gradient ring (score out of 10)
+  const score = Number(evaluation.overallScore) || 0;
+  const scoreAngle = Math.min(360, (score / 10) * 360);
+  const scoreColorClass = getScoreColor(score);
 
   return (
     <div className="final-evaluation">
@@ -17,8 +25,17 @@ const FinalEvaluation = ({ evaluation, answers }) => {
       
       <div className="overall-score-section">
         <h3>Overall Performance</h3>
-        <div className={`score-circle ${getScoreColor(evaluation.overallScore)}`}>
-          {evaluation.overallScore}/10
+        <div
+          className={`score-circle ${scoreColorClass}`}
+          style={{ '--score-angle': `${scoreAngle}deg` }}
+        >
+          <div className="score-glow" />
+          <div className="score-ring-bg" />
+          <div className="score-inner" />
+          <div className="score-center">
+            <span className={`score-main ${scoreColorClass}`}>{score}</span>
+            <span className="score-max">/10</span>
+          </div>
         </div>
       </div>
 

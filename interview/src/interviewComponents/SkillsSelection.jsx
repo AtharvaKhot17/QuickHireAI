@@ -1,89 +1,117 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../styles/SkillsSelection.css';
+import { api } from '../services/api';
 
 const SKILL_CATEGORIES = {
-  languages: [
-    { id: 'javascript', name: 'JavaScript', icon: '⚡' },
-    { id: 'python', name: 'Python', icon: '🐍' },
-    { id: 'java', name: 'Java', icon: '☕' },
-    { id: 'cpp', name: 'C++', icon: '⚙️' }
-  ],
-  web: [
-    { id: 'react', name: 'React', icon: '⚛️' },
-    { id: 'node', name: 'Node.js', icon: '🟢' },
-    { id: 'html_css', name: 'HTML/CSS', icon: '🎨' },
-    { id: 'angular', name: 'Angular', icon: '🅰️' }
-  ],
-  databases: [
-    { id: 'sql', name: 'SQL', icon: '📊' },
-    { id: 'mongodb', name: 'MongoDB', icon: '🍃' },
-    { id: 'postgresql', name: 'PostgreSQL', icon: '🐘' },
-    { id: 'redis', name: 'Redis', icon: '🔴' }
-  ],
-  cs_fundamentals: [
-    { id: 'dsa', name: 'DSA', icon: '📈' },
-    { id: 'os', name: 'Operating Systems', icon: '💻' },
-    { id: 'networks', name: 'Computer Networks', icon: '🌐' },
-    { id: 'dbms', name: 'DBMS', icon: '🗄️' }
-  ]
+  sde: {
+    title: 'Software Development Engineer',
+    skills: [
+      { id: 'javascript', name: 'JavaScript', icon: '⚡' },
+      { id: 'python', name: 'Python', icon: '🐍' },
+      { id: 'java', name: 'Java', icon: '☕' },
+      { id: 'cpp', name: 'C++', icon: '⚙️' },
+      { id: 'typescript', name: 'TypeScript', icon: '📘' },
+      { id: 'go', name: 'Go', icon: '🦫' },
+      { id: 'ruby', name: 'Ruby', icon: '💎' }
+    ]
+  },
+  frontend: {
+    title: 'Frontend Development',
+    skills: [
+      { id: 'react', name: 'React', icon: '⚛️' },
+      { id: 'angular', name: 'Angular', icon: '🅰️' },
+      { id: 'vue', name: 'Vue.js', icon: '🟢' },
+      { id: 'html_css', name: 'HTML/CSS', icon: '🎨' },
+      { id: 'sass', name: 'SASS/SCSS', icon: '🎯' },
+      { id: 'redux', name: 'Redux', icon: '🔄' },
+      { id: 'nextjs', name: 'Next.js', icon: '⏭️' }
+    ]
+  },
+  backend: {
+    title: 'Backend Development',
+    skills: [
+      { id: 'node', name: 'Node.js', icon: '🟢' },
+      { id: 'express', name: 'Express.js', icon: '🚂' },
+      { id: 'django', name: 'Django', icon: '🐍' },
+      { id: 'spring', name: 'Spring Boot', icon: '🌱' },
+      { id: 'flask', name: 'Flask', icon: '🍶' },
+      { id: 'graphql', name: 'GraphQL', icon: '📊' },
+      { id: 'rest', name: 'REST APIs', icon: '🌐' }
+    ]
+  },
+  devops: {
+    title: 'DevOps & Cloud',
+    skills: [
+      { id: 'aws', name: 'AWS', icon: '☁️' },
+      { id: 'docker', name: 'Docker', icon: '🐳' },
+      { id: 'kubernetes', name: 'Kubernetes', icon: '⚓' },
+      { id: 'jenkins', name: 'Jenkins', icon: '🤖' },
+      { id: 'terraform', name: 'Terraform', icon: '🏗️' },
+      { id: 'git', name: 'Git', icon: '📚' },
+      { id: 'ci_cd', name: 'CI/CD', icon: '🔄' }
+    ]
+  },
+  database: {
+    title: 'Database & Data',
+    skills: [
+      { id: 'sql', name: 'SQL', icon: '📊' },
+      { id: 'mongodb', name: 'MongoDB', icon: '🍃' },
+      { id: 'postgresql', name: 'PostgreSQL', icon: '🐘' },
+      { id: 'redis', name: 'Redis', icon: '🔴' },
+      { id: 'elasticsearch', name: 'Elasticsearch', icon: '🔍' },
+      { id: 'bigdata', name: 'Big Data', icon: '📈' },
+      { id: 'data_structures', name: 'Data Structures', icon: '📚' }
+    ]
+  }
 };
 
 const SkillsSelection = () => {
   const navigate = useNavigate();
   const { interviewCode } = useParams();
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSkillSelection = (skillId) => {
-    if (selectedSkills.includes(skillId)) {
-      setSelectedSkills(selectedSkills.filter(s => s !== skillId));
-    } else {
-      setSelectedSkills([...selectedSkills, skillId]);
-    }
+  const toggleSkill = (skill) => {
+    setSelectedSkills(prev => {
+      if (prev.includes(skill)) {
+        return prev.filter(s => s !== skill);
+      } else {
+        return [...prev, skill];
+      }
+    });
   };
 
-  const startInterview = async () => {
+  const handleStartInterview = async () => {
     if (selectedSkills.length < 2) {
       setError('Please select at least 2 skills');
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch('http://localhost:5000/api/interview/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          interviewCode,
-          skills: selectedSkills
-        })
+      setIsLoading(true);
+      setError(null);
+
+      const response = await api.post('/interviews/start', {
+        interviewCode,
+        skills: selectedSkills
       });
 
-      const data = await response.json();
-      console.log('Server response:', data);
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to start interview');
+      if (response.data.success) {
+        navigate(`/interview/session/${interviewCode}`, {
+          state: {
+            interviewData: response.data.interview,
+            interviewCode,
+            skills: selectedSkills
+          }
+        });
+      } else {
+        throw new Error(response.data.error || 'Failed to start interview');
       }
-
-      navigate(`/interview/session/${interviewCode}`, {
-        state: {
-          skills: selectedSkills,
-          interviewCode,
-          interviewData: data.interview
-        },
-        replace: true
-      });
-
     } catch (error) {
       console.error('Error starting interview:', error);
-      setError(error.message || 'Failed to start interview. Please try again.');
+      setError(error.response?.data?.details || error.message || 'Failed to start interview. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -101,77 +129,107 @@ const SkillsSelection = () => {
         </div>
       ) : (
         <>
-          <h2>Select Skills for Your Interview (Minimum 2)</h2>
-          {error && (
-            <div className="error-message">
-              {error}
+          <div className="header-section">
+            <h1>Select Your Skills</h1>
+            <p className="subtitle">Choose at least 2 skills for your technical interview</p>
+            {error && <div className="error-message">{error}</div>}
+            <div className="selection-info">
+              <span className="selected-count">{selectedSkills.length}</span>
+              <span>skills selected</span>
             </div>
-          )}
-          
-          <p className="selection-info">
-            Selected Skills: {selectedSkills.length} (Minimum 2 required)
-          </p>
+          </div>
 
-          {Object.entries(SKILL_CATEGORIES).map(([category, skills]) => (
-            <div key={category} className="skill-category">
-              <h3>{category.replace('_', ' ').toUpperCase()}</h3>
-              <div className="skills-grid">
-                {skills.map((skill) => (
-                  <button
-                    key={skill.id}
-                    className={`skill-button ${selectedSkills.includes(skill.id) ? 'selected' : ''}`}
-                    onClick={() => handleSkillSelection(skill.id)}
-                    disabled={isLoading}
-                  >
-                    <span className="skill-icon">{skill.icon}</span>
-                    <span className="skill-name">{skill.name}</span>
-                  </button>
-                ))}
+          <div className="skills-container">
+            {Object.entries(SKILL_CATEGORIES).map(([category, { title, skills }]) => (
+              <div key={category} className="skill-category">
+                <h2 className="category-title">{title}</h2>
+                <div className="skills-grid">
+                  {skills.map(({ id, name, icon }) => (
+                    <button
+                      key={id}
+                      className={`skill-button ${selectedSkills.includes(name) ? 'selected' : ''}`}
+                      onClick={() => toggleSkill(name)}
+                    >
+                      <span className="skill-icon">{icon}</span>
+                      <span className="skill-name">{name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-          <button 
-            className="start-button"
-            onClick={startInterview}
-            disabled={selectedSkills.length < 2 || isLoading}
-          >
-            {isLoading ? 'Starting Interview...' : 'Start Interview'}
-          </button>
+          <div className="action-buttons">
+            <button
+              className="start-button"
+              onClick={handleStartInterview}
+              disabled={selectedSkills.length < 2}
+            >
+              {isLoading ? 'Starting Interview...' : 'Start Interview'}
+            </button>
+          </div>
         </>
       )}
 
       <style jsx>{`
         .skills-selection {
           padding: 2rem;
-          max-width: 1000px;
+          max-width: 1200px;
           margin: 0 auto;
+          background: #f8fafc;
+          min-height: 100vh;
         }
 
-        .error-message {
-          background: #fed7d7;
-          color: #c53030;
-          padding: 1rem;
-          border-radius: 8px;
-          margin-bottom: 1rem;
+        .header-section {
           text-align: center;
+          margin-bottom: 3rem;
+        }
+
+        .header-section h1 {
+          font-size: 2.5rem;
+          color: #1a202c;
+          margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+          color: #4a5568;
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
         }
 
         .selection-info {
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-size: 1.2rem;
           color: #4a5568;
-          margin-bottom: 2rem;
+        }
+
+        .selected-count {
+          font-weight: bold;
+          color: #3182ce;
+        }
+
+        .skills-container {
+          display: flex;
+          flex-direction: column;
+          gap: 2.5rem;
         }
 
         .skill-category {
-          margin-bottom: 2rem;
+          background: white;
+          padding: 1.5rem;
+          border-radius: 12px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .skill-category h3 {
+        .category-title {
           color: #2d3748;
-          margin-bottom: 1rem;
-          font-size: 1.2rem;
-          text-transform: capitalize;
+          font-size: 1.5rem;
+          margin-bottom: 1.5rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid #e2e8f0;
         }
 
         .skills-grid {
@@ -193,46 +251,91 @@ const SkillsSelection = () => {
           width: 100%;
         }
 
-        .skill-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        .skill-button:hover {
+          border-color: #3182ce;
+          transform: translateY(-2px);
         }
 
         .skill-button.selected {
-          background: #3182ce;
-          color: white;
+          background: #ebf8ff;
           border-color: #3182ce;
+          color: #3182ce;
         }
 
         .skill-icon {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
         }
 
         .skill-name {
-          font-size: 1rem;
+          font-weight: 500;
+        }
+
+        .error-message {
+          background: #fed7d7;
+          color: #c53030;
+          padding: 1rem;
+          border-radius: 8px;
+          margin: 1rem 0;
+          text-align: center;
+        }
+
+        .action-buttons {
+          margin-top: 3rem;
+          text-align: center;
         }
 
         .start-button {
-          width: 100%;
-          padding: 1rem;
           background: #3182ce;
           color: white;
+          padding: 1rem 2rem;
           border: none;
           border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
           font-size: 1.1rem;
-          margin-top: 2rem;
-        }
-
-        .start-button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
         }
 
         .start-button:hover:not(:disabled) {
           background: #2c5282;
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+        }
+
+        .start-button:disabled {
+          background: #cbd5e0;
+          cursor: not-allowed;
+        }
+
+        .loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+
+        .loading-content {
+          text-align: center;
+        }
+
+        .loading-spinner {
+          border: 4px solid #e2e8f0;
+          border-top: 4px solid #3182ce;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>

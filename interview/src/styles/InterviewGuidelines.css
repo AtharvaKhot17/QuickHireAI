@@ -1,140 +1,143 @@
 .guidelines-container {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: #f8f9fa;
   padding: 2rem;
 }
 
 .guidelines-content {
-  background: white;
-  padding: 3rem;
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
-  max-width: 800px;
-  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.guidelines-content h1 {
+.guidelines-container h1 {
+  text-align: center;
+  color: #2d3748;
   font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-bottom: 0.5rem;
-  text-align: center;
+  margin-bottom: 2rem;
 }
 
-.subtitle {
-  text-align: center;
-  color: var(--light-text);
-  margin-bottom: 3rem;
+.guidelines-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.guidelines-card h2 {
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
 }
 
 .guidelines-list {
+  list-style: none;
+  padding: 0;
   display: grid;
-  gap: 2rem;
-  margin-bottom: 3rem;
-}
-
-.guideline-item {
-  display: flex;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
+}
+
+.guidelines-list li {
+  display: flex;
   align-items: flex-start;
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: rgba(59, 130, 246, 0.05);
-  transition: all 0.3s ease;
-}
-
-.guideline-item:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.guideline-item i {
-  font-size: 1.5rem;
-  color: var(--primary-color);
-  background: white;
+  gap: 1rem;
   padding: 1rem;
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+  background: #f7fafc;
+  border-radius: 8px;
 }
 
-.guideline-item h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--text-color);
+.guidelines-list i {
+  font-size: 1.5rem;
+  color: #3182ce;
+  padding-top: 0.25rem;
+}
+
+.guidelines-list h3 {
+  color: #2d3748;
   margin-bottom: 0.5rem;
+  font-size: 1.1rem;
 }
 
-.guideline-item p {
-  color: var(--light-text);
-  line-height: 1.5;
+.guidelines-list p {
+  color: #718096;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
-.consent-checkbox {
+.format-list, .tips-list {
+  list-style: none;
+  padding: 0;
+}
+
+.format-list li, .tips-list li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  color: #4a5568;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.format-list li:before, .tips-list li:before {
+  content: "•";
+  color: #3182ce;
+  font-weight: bold;
+  position: absolute;
+  left: 0.75rem;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+}
+
+.back-btn, .continue-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1rem;
-  border-radius: 12px;
-  background: rgba(59, 130, 246, 0.05);
-}
-
-.consent-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  gap: 0.5rem;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.consent-checkbox label {
-  color: var(--text-color);
-  font-weight: 500;
-  cursor: pointer;
+.back-btn {
+  background: white;
+  color: #718096;
+  border: 1px solid #e2e8f0;
 }
 
-.proceed-button {
-  width: 100%;
-  padding: 1.2rem;
-  background: var(--primary-gradient);
+.continue-btn {
+  background: #3182ce;
   color: white;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
 }
 
-.proceed-button:not(.disabled):hover {
-  background: var(--hover-gradient);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+.back-btn:hover {
+  background: #f7fafc;
 }
 
-.proceed-button.disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  background: #ccc;
+.continue-btn:hover {
+  background: #2c5282;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
-  .guidelines-content {
-    padding: 2rem;
+  .guidelines-container {
+    padding: 1rem;
   }
 
-  .guidelines-content h1 {
-    font-size: 2rem;
-  }
-
-  .guideline-item {
+  .action-buttons {
     flex-direction: column;
-    text-align: center;
-    align-items: center;
+    gap: 1rem;
+  }
+
+  .back-btn, .continue-btn {
+    width: 100%;
+    justify-content: center;
   }
 } 

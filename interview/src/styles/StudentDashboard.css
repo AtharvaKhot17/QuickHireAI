@@ -27,7 +27,7 @@
 .main-content {
   flex: 1;
   padding: 2rem;
-  margin-left: 280px;
+  overflow-y: auto;
   background-color: #f8fafc;
 }
 

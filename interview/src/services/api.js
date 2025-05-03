@@ -1,27 +1,63 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Make sure this matches your backend URL
+  baseURL: 'http://localhost:5001/api', // Updated to match backend port
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  timeout: 10000, // 10 second timeout
+  retry: 3, // Number of retries
+  retryDelay: 1000 // Delay between retries in milliseconds
 });
 
-// Add interceptors for better error handling
+// Add request interceptor for token
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
 api.interceptors.response.use(
   response => response,
-  error => {
-    console.error('API Error:', error);
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      throw new Error(error.response.data.error || 'An error occurred');
-    } else if (error.request) {
-      // The request was made but no response was received
-      throw new Error('No response from server. Please check your connection.');
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      throw new Error('Error setting up request. Please try again.');
+  async error => {
+    const originalRequest = error.config;
+    
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network Error:', error);
+      if (originalRequest.retry < originalRequest.retry) {
+        originalRequest.retry += 1;
+        await new Promise(resolve => setTimeout(resolve, originalRequest.retryDelay));
+        return api(originalRequest);
+      }
+      throw new Error('Unable to connect to server. Please check your internet connection.');
+    }
+
+    // Handle specific error codes
+    switch (error.response.status) {
+      case 401:
+        // Handle unauthorized access
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      
+      case 404:
+        throw new Error('Resource not found. Please check the URL.');
+      
+      case 500:
+        throw new Error('Server error. Please try again later.');
+      
+      default:
+        throw new Error(error.response.data.error || 'An unexpected error occurred');
     }
   }
 );

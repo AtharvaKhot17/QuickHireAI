@@ -2,39 +2,29 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const interviewController = require('../controllers/interviewController');
 const geminiService = require('../services/geminiService');
 const questionService = require('../services/questionService');
+const auth = require('../middleware/auth');
+const faceAnalysisService = require('../services/faceAnalysisService');
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Create new interview
+router.post('/create', auth, interviewController.createInterview);
+
+// Upload candidates from Excel
+router.post('/:interviewId/upload-candidates', auth, upload.single('file'), interviewController.uploadCandidates);
+
+// Get all interviews for a company
+router.get('/company', auth, interviewController.getCompanyInterviews);
+
+// Get interview details
+router.get('/:id', auth, interviewController.getInterviewDetails);
 
 // Start new interview
-router.post('/start', async (req, res) => {
-  try {
-    const { interviewCode, skills } = req.body;
-    console.log('Starting interview with code:', interviewCode);
-
-    // Initialize interview session
-    const interview = await interviewController.startInterview(interviewCode, skills);
-
-    if (!interview) {
-      throw new Error('Failed to initialize interview');
-    }
-
-    console.log('Interview initialized:', interview);
-
-    res.json({ 
-      success: true, 
-      interview,
-      message: 'Interview started successfully'
-    });
-  } catch (error) {
-    console.error('Error starting interview:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to start interview',
-      details: error.message
-    });
-  }
-});
+router.post('/start', auth, interviewController.startInterview);
 
 // Get questions based on selected skills
 router.get('/:id/questions', (req, res) => {
@@ -181,6 +171,26 @@ router.get('/:id/results', (req, res) => {
   } catch (error) {
     console.error('Error getting results:', error);
     res.status(500).json({ error: 'Error getting results' });
+  }
+});
+
+// Add face analysis route
+router.post('/analyze-face', interviewController.analyzeFace);
+
+// Face analysis route
+router.post('/face-analysis', auth, async (req, res) => {
+  try {
+    const { faceBox, frameSize } = req.body;
+    
+    if (!faceBox || !frameSize) {
+      return res.status(400).json({ error: 'Missing face detection data' });
+    }
+
+    const analysis = await faceAnalysisService.analyzeFrame({ faceBox, frameSize });
+    res.json(analysis);
+  } catch (error) {
+    console.error('Face analysis error:', error);
+    res.status(500).json({ error: 'Error analyzing face data' });
   }
 });
 

@@ -1,19 +1,63 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css"; // Import the CSS file
+import axios from "axios";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [userType, setUserType] = useState("student"); // Default: Student
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (userType === "student") {
-      navigate("/dashboard");
-    } else {
-      navigate("/company-dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      // Clear any existing tokens
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      const response = await axios.post('http://localhost:5001/api/auth/login', {
+        email, 
+        password,
+        userType
+      }, {
+        withCredentials: true
+      });
+
+      const data = await response.data;
+
+      if (!response.data.token) {
+        throw new Error("No authentication token received");
+      }
+
+      // Verify user type matches
+      if (data.user?.userType !== userType) {
+        throw new Error(`Please login as a ${data.user?.userType || 'correct user type'}`);
+      }
+
+      // Store user data and token in localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+
+      // Navigate based on user type
+      if (userType === "student") {
+        navigate("/dashboard");
+      } else {
+        navigate("/company-dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message);
+      // Clear any partial data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,6 +97,8 @@ const LoginPage = () => {
               </button>
             </div>
 
+            {error && <div className="error-message">{error}</div>}
+
             <form onSubmit={handleLogin}>
               <div className="input-group">
                 <i className="fas fa-envelope"></i>
@@ -62,6 +108,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
               <div className="input-group">
@@ -72,10 +119,24 @@ const LoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
-              <button type="submit" className="login-button">
-                Login <i className="fas fa-arrow-right"></i>
+              <button 
+                type="submit" 
+                className="login-button"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    Login <i className="fas fa-arrow-right"></i>
+                  </>
+                )}
               </button>
             </form>
 
