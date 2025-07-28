@@ -27,7 +27,7 @@ QuickHire_AI/
 
 ---
 
-## 🛠 Prerequisites
+## Prerequisites
 - Node.js (v16+ recommended)
 - npm (v8+ recommended)
 - MongoDB Atlas account (or local MongoDB)
