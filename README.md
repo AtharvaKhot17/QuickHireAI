@@ -4,7 +4,7 @@ A modern AI-powered technical interview platform for companies and students. Com
 
 ---
 
-## 🚀 Features
+## Features
 - Company and student login/registration
 - Company-driven and mock interview flows
 - AI-generated questions and answer evaluation (Google Gemini)
@@ -15,7 +15,7 @@ A modern AI-powered technical interview platform for companies and students. Com
 
 ---
 
-## 📁 Folder Structure
+## Folder Structure
 
 ```
 QuickHire_AI/
@@ -35,7 +35,7 @@ QuickHire_AI/
 
 ---
 
-## ⚡ Quick Start
+##  Quick Start
 
 ### 1. Clone the Repository
 ```sh
@@ -81,7 +81,7 @@ npm run dev
 
 ---
 
-## 🧑‍💻 Usage
+##  Usage
 
 ### For Companies
 1. Register/login as a company
@@ -98,7 +98,7 @@ npm run dev
 
 ---
 
-## 🏗️ Project Architecture (Summary)
+##  Project Architecture (Summary)
 - **Frontend**: React 18, Vite, React Router, Axios, CSS modules
 - **Backend**: Express, MongoDB (Mongoose), JWT, bcrypt, Multer
 - **AI**: Google Gemini API for question generation and answer evaluation
@@ -107,7 +107,7 @@ npm run dev
 
 ---
 
-## 📝 Contributing
+##  Contributing
 1. Fork this repo
 2. Create a new branch (`git checkout -b feature/your-feature`)
 3. Commit your changes (`git commit -am 'Add new feature'`)
@@ -116,12 +116,11 @@ npm run dev
 
 ---
 
-## 📚 More Documentation
+##  More Documentation
 - See the main README sections below for full technical/architecture details
 - See `Backend/API_DOCUMENTATION.md` for API details
 - See `Backend/VALIDATION_CHECKLIST.md` for validation rules
 
 ---
 
-## 🗨️ Questions?
-Open an issue or discussion on GitHub!
+
