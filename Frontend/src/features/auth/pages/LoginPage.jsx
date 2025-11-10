@@ -1,15 +1,15 @@
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import "../styles/LoginPage.css"; // Import the CSS file
-// import { login } from "../services/authApi";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/LoginPage.css"; // Import the CSS file
+import { login } from "../services/authApi";
 
-// const LoginPage = () => {
-//   const navigate = useNavigate();
-//   const [userType, setUserType] = useState("student"); // Default: Student
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [error, setError] = useState("");
-//   const [loading, setLoading] = useState(false);
+const LoginPage = () => {
+  const navigate = useNavigate();
+  const [userType, setUserType] = useState("student"); // Default: Student
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
