@@ -1,9 +1,9 @@
-import { useNavigate } from "react-router-dom";
-import { useContext } from 'react';
-import landingImg from '../../../images/landing1.png';
-// If you have a UserContext, import it:
-// import { UserContext } from '../../context/UserContext';
-import '../styles/landing.css';
+// import { useNavigate } from "react-router-dom";
+// import { useContext } from 'react';
+// import landingImg from '../../../images/landing1.png';
+// // If you have a UserContext, import it:
+// // import { UserContext } from '../../context/UserContext';
+// import '../styles/landing.css';
 
 // Example fallback if you don't have context yet
 const getUserName = (props) => {
